@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>编辑后台 · 听书</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: #0e1015; color: white; margin: 0; font-family: -apple-system, system-ui, sans-serif; }
+    .layout { max-width: 960px; margin: 0 auto; padding: 20px; }
+    .topbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; background: #15181f; border-radius: 12px;
+      margin-bottom: 18px;
+    }
+    .topbar h1 { font-size: 18px; margin: 0; flex: 1; }
+    .topbar a {
+      background: rgba(255,255,255,.08); color: white; padding: 8px 14px;
+      border-radius: 8px; text-decoration: none; font-size: 13px;
+    }
+    .panel { background: #15181f; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    .panel h2 { font-size: 14px; margin: 0 0 10px; opacity: .7; font-weight: 500; }
+    .input, textarea {
+      width: 100%; padding: 10px;
+      background: #0e1015; color: white; border: 1px solid #232732;
+      border-radius: 8px; font-size: 14px; box-sizing: border-box;
+      font-family: inherit;
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 12px; opacity: .6; margin-bottom: 4px; }
+    .btn {
+      padding: 10px 16px; background: #5b5bff; color: white;
+      border: 0; border-radius: 8px; cursor: pointer; font-size: 13px;
+    }
+    .btn.secondary { background: rgba(255,255,255,.08); }
+    .btn.danger { background: #b5444a; }
+    .actions { display: flex; gap: 8px; margin-top: 8px; }
+    .meta-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .meta-row .cell { background: #15181f; padding: 14px; border-radius: 10px; text-align: center; }
+    .meta-row .n { font-size: 22px; font-weight: 700; }
+    .meta-row .l { font-size: 11px; opacity: .5; }
+    .banner-list { display: flex; flex-direction: column; gap: 6px; }
+    .banner-item {
+      padding: 10px 14px; background: #1c2029; border-radius: 8px;
+      display: flex; align-items: center; gap: 10px; font-size: 13px;
+    }
+    .banner-item .t { flex: 1; }
+    .book-table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+    }
+    .book-table th, .book-table td {
+      padding: 8px 10px; text-align: left;
+      border-bottom: 1px solid #232732;
+    }
+    .book-table th { opacity: .5; font-weight: 500; }
+    .ok  { color: #66e5a6; }
+    .err { color: #ff7676; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div class="topbar">
+      <a href="./index.html">‹ 返回首页</a>
+      <h1>编辑后台</h1>
+      <a href="./me.html">我的</a>
+    </div>
+
+    <div id="guard" class="panel" style="display:none;"></div>
+
+    <div id="main" style="display:none;">
+      <div class="meta-row">
+        <div class="cell"><div class="n" id="cnt_books">-</div><div class="l">站点书数</div></div>
+        <div class="cell"><div class="n" id="cnt_users">-</div><div class="l">注册用户</div></div>
+        <div class="cell"><div class="n" id="cnt_banners">-</div><div class="l">公告数</div></div>
+      </div>
+
+      <div class="panel">
+        <h2>公告管理</h2>
+        <div class="field"><label>新公告内容</label><input class="input" id="bn_text" placeholder="如:本周新书上架"></div>
+        <div class="field"><label><input type="checkbox" id="bn_active" checked> 立即启用</label></div>
+        <div class="actions"><button class="btn" id="addBanner">发布公告</button></div>
+        <div style="margin-top: 12px;" class="banner-list" id="bannerList"></div>
+      </div>
+
+      <div class="panel">
+        <h2>内容总览</h2>
+        <table class="book-table">
+          <thead><tr><th>书名</th><th>作者</th><th>分类</th><th>热度</th><th>章节数</th></tr></thead>
+          <tbody id="bookTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { authMe, listBooks, listBanners, createBanner, updateBanner, listChapters } from './api-client.js';
+
+    const $ = (s) => document.querySelector(s);
+    let me = null;
+    let banners = [], books = [];
+
+    async function init() {
+      try { me = (await authMe()).user; } catch { location.href = './auth.html'; return; }
+      if (!me.isEditor) {
+        $('#guard').style.display = 'block';
+        $('#guard').innerHTML = `<div class="err">你不是编辑。设置 ADMIN_PHONE 即可,或者只用管理员手机号注册/登录。</div>`;
+        return;
+      }
+      $('#main').style.display = 'block';
+      await loadAll();
+    }
+
+    async function loadAll() {
+      const [b1, b2] = await Promise.all([listBanners(), listBooks()]);
+      banners = b1.banners || [];
+      books = b2.books || [];
+      $('#cnt_books').textContent = books.length;
+      $('#cnt_banners').textContent = banners.length;
+      renderBanners();
+      renderBooks();
+    }
+
+    function renderBanners() {
+      const el = $('#bannerList');
+      if (banners.length === 0) { el.innerHTML = `<div style="opacity:.5;font-size:13px">还没有公告</div>`; return; }
+      el.innerHTML = banners.map((b) => `
+        <div class="banner-item">
+          <span class="t">${escapeHtml(b.text)}</span>
+          <span class="${b.active ? 'ok' : 'err'}" style="font-size:11px;">${b.active ? '启用' : '已停'}</span>
+          <button class="btn secondary" data-id="${b.id}" data-act="toggle">${b.active ? '停用' : '启用'}</button>
+          <button class="btn danger" data-id="${b.id}" data-act="del">删除</button>
+        </div>
+      `).join('');
+      $$('.banner-item button').forEach((b) => b.addEventListener('click', onBannerAct));
+    }
+
+    async function onBannerAct(e) {
+      const id = e.currentTarget.dataset.id;
+      const act = e.currentTarget.dataset.act;
+      try {
+        if (act === 'toggle') {
+          const b = banners.find((x) => x.id === id);
+          await updateBanner(id, { active: !b.active });
+        } else if (act === 'del') {
+          // 没有 delete 接口 -> 切换 active=false
+          await updateBanner(id, { active: false });
+        }
+        await loadAll();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function renderBooks() {
+      const tb = $('#bookTable');
+      // 并发拉每本书章节数
+      const rows = await Promise.all(books.map(async (b) => {
+        let n = '?';
+        try { const r = await listChapters(b.id); n = (r.chapters || []).length; } catch {}
+        const star = b.rating_n
+          ? `<span class="rs-full">★</span> ${(b.rating_avg||0).toFixed(1)} (${b.rating_n})`
+          : '<span style="opacity:.5">—</span>';
+        return `<tr>
+          <td>${escapeHtml(b.title)}</td>
+          <td>${escapeHtml(b.author)}</td>
+          <td>${escapeHtml(b.genre || '-')}</td>
+          <td>${b.hot || 0}</td>
+          <td>${star}</td>
+          <td>${n}</td>
+        </tr>`;
+      }));
+      tb.innerHTML = rows.join('');
+    }
+
+    function escapeHtml(s) { return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+    function $$(s) { return Array.from(document.querySelectorAll(s)); }
+
+    $('#addBanner').addEventListener('click', async () => {
+      const text = $('#bn_text').value.trim();
+      const active = $('#bn_active').checked;
+      if (!text) return;
+      try {
+        await createBanner(text, active);
+        $('#bn_text').value = '';
+        await loadAll();
+      } catch (e) { alert(e.message); }
+    });
+
+    init();
+  </script>
+</body>
+</html>

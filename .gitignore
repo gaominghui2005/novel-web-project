@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.local
+.env.local.disabled
+.DS_Store
+*.log
+novel.db
+novel.db-shm
+novel.db-wal

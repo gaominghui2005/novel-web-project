@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1f1432"/>
+      <stop offset="100%" stop-color="#4a1e5a"/>
+    </linearGradient>
+    <radialGradient id="r" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="240" height="320" fill="url(#g)"/>
+  <rect width="240" height="320" fill="url(#r)"/>
+  <!-- 装饰小圆点 -->
+  <circle cx="40" cy="60" r="2" fill="rgba(255,255,255,0.25)"/>
+  <circle cx="200" cy="40" r="1.5" fill="rgba(255,255,255,0.2)"/>
+  <circle cx="60" cy="280" r="2.5" fill="rgba(255,255,255,0.15)"/>
+  <circle cx="190" cy="260" r="1.5" fill="rgba(255,255,255,0.2)"/>
+  <circle cx="180" cy="100" r="1" fill="rgba(255,255,255,0.3)"/>
+  <!-- 中央符号 -->
+  <text x="120" y="155" text-anchor="middle" font-size="48" fill="rgba(255,255,255,0.35)" font-family="serif">⚒</text>
+  <!-- 标题 -->
+  <text x="120" y="220" text-anchor="middle" font-size="36" font-weight="700" fill="rgba(255,255,255,0.95)" font-family="'Microsoft YaHei', sans-serif">灵武帝尊</text>
+  <!-- 副标题 -->
+  <text x="120" y="250" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.6)" letter-spacing="2">玄幻 · 横扫八荒</text>
+  <!-- 底部装饰线 -->
+  <line x1="100" y1="280" x2="140" y2="280" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+  <text x="120" y="298" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" letter-spacing="3">听书</text>
+</svg>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1">
+  <title>听书 · 小说阅读</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* boot 中显示的占位 */
+    .boot-mask {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg, #0c0d11); color: white; z-index: 999;
+      font-size: 14px; opacity: .85;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <div class="phone-screen" id="screen">
+
+      <div class="app-body" id="app-body"></div>
+
+      <nav class="tab-bar" id="tab-bar">
+        <a class="tab" data-tab="home"><span class="ic ic-home"></span><span>书架</span></a>
+        <a class="tab" data-tab="cat"><span class="ic ic-sound"></span><span>书库</span></a>
+        <a class="tab" data-tab="me"><span class="ic ic-me"></span><span>我的</span></a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="boot-mask" id="bootMask">登录中…</div>
+  <div class="toast" id="toast"></div>
+  <script src="data.js"></script>
+  <script src="fetch-helper.js"></script>
+  <script src="bootstrap.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // 等 boot 完成再让 app.js 渲染
+    document.addEventListener('novel:booted', () => {
+      const m = document.getElementById('bootMask'); if (m) m.remove();
+      // app.js 自己挂 DOMContentLoaded,里面会判断 role;我们再补一次
+    });
+  </script>
+</body>
+</html>

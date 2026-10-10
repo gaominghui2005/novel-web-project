@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1">
+  <title>我的 · 听书</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .me-wrap { padding: 32px 20px; display: flex; flex-direction: column; gap: 16px; }
+    .me-card { background: rgba(255,255,255,0.06); padding: 18px; border-radius: 14px; }
+    .me-name { font-size: 22px; font-weight: 600; }
+    .me-phone { font-size: 13px; opacity: 0.6; margin-top: 4px; }
+    .me-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    .me-actions button {
+      padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+      background: rgba(255,255,255,0.08); color: white; font-size: 15px;
+    }
+    .me-actions button.primary { background: linear-gradient(90deg, #5b5bff, #ff66cc); }
+    .me-actions button.danger  { background: rgba(255,100,100,0.25); }
+    .me-actions a {
+      text-decoration: none; color: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <div class="phone-screen">
+      <div class="me-wrap">
+        <div class="me-card" id="userCard">
+          <div class="me-name" id="name">…</div>
+          <div class="me-phone" id="phone">…</div>
+        </div>
+        <div class="me-card me-actions" id="actions"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import { authMe, authLogout, authBecomeAuthor } from './api-client.js';
+    import { loadBanners } from './data.js';
+
+    const $ = (s) => document.querySelector(s);
+    const actions = $('#actions');
+
+    async function showBanners(banners) {
+      const list = (banners || []).filter(b => b.active);
+      if (!list.length) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'me-card';
+      wrap.innerHTML = '<div style="font-size:13px;opacity:0.7;margin-bottom:6px">公告</div>' +
+        list.map(b => `<div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.08)">${b.text}</div>`).join('');
+      actions.before(wrap);
+    }
+
+    async function loadLocalBanners() {
+      try { return await (await fetch('/api/banners', { credentials: 'include' })).json(); }
+      catch { return null; }
+    }
+
+    async function init() {
+      try {
+        const me = await authMe();
+        const u = me.user;
+        $('#name').textContent = u.name || '读者';
+        $('#phone').textContent = u.phone;
+
+        const list = [];
+        list.push(['回到首页', '', () => location.href = './index.html']);
+        if (u.isEditor) {
+          list.push(['进入编辑后台', 'primary', () => location.href = './editor.html']);
+        } else if (u.isAuthor) {
+          list.push(['进入创作模式', 'primary', () => location.href = './author.html']);
+        } else {
+          list.push(['申请成为作者', 'primary', async () => {
+            try {
+              await authBecomeAuthor();
+              location.reload();
+            } catch (e) { alert(e.message); }
+          }]);
+        }
+        list.push(['退出登录', 'danger', async () => {
+          await authLogout();
+          location.href = './auth.html';
+        }]);
+
+        actions.innerHTML = '';
+        for (const [text, kind, fn] of list) {
+          const btn = document.createElement('button');
+          btn.className = kind;
+          btn.textContent = text;
+          btn.onclick = fn;
+          actions.appendChild(btn);
+        }
+
+        const bans = await loadLocalBanners();
+        showBanners(bans?.banners);
+      } catch (e) {
+        // 没登录 -> 跳登录页
+        location.href = './auth.html';
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

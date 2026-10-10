@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>作者工作台 · 听书</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: #0e1015; color: white; margin: 0; font-family: -apple-system, system-ui, sans-serif; }
+    .layout { max-width: 960px; margin: 0 auto; padding: 20px; }
+    .topbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; background: #15181f; border-radius: 12px;
+      margin-bottom: 18px;
+    }
+    .topbar h1 { font-size: 18px; margin: 0; flex: 1; }
+    .topbar a.btn-back {
+      background: rgba(255,255,255,.08); color: white; padding: 8px 14px;
+      border-radius: 8px; text-decoration: none; font-size: 13px;
+    }
+
+    .row { display: grid; grid-template-columns: 280px 1fr; gap: 16px; }
+    @media (max-width: 700px) { .row { grid-template-columns: 1fr; } }
+
+    .panel { background: #15181f; border-radius: 12px; padding: 16px; }
+    .panel h2 { font-size: 14px; margin: 0 0 12px; opacity: .7; font-weight: 500; letter-spacing: .5px; }
+    .book-list { display: flex; flex-direction: column; gap: 8px; }
+    .book-item {
+      padding: 10px; background: #1c2029; border-radius: 8px; cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .book-item.active { border-color: #5b5bff; background: rgba(91,91,255,.08); }
+    .book-item .t { font-weight: 600; font-size: 14px; }
+    .book-item .m { font-size: 11px; opacity: .5; margin-top: 2px; }
+    .new-btn {
+      padding: 10px; margin-top: 10px;
+      background: linear-gradient(90deg, #5b5bff, #ff66cc);
+      color: white; border: 0; border-radius: 8px; cursor: pointer; width: 100%;
+      font-size: 13px;
+    }
+    .empty { padding: 30px 10px; text-align: center; opacity: .5; font-size: 13px; }
+
+    .input, textarea {
+      width: 100%; padding: 10px;
+      background: #0e1015; color: white; border: 1px solid #232732;
+      border-radius: 8px; font-size: 14px; box-sizing: border-box;
+      font-family: inherit;
+    }
+    textarea { min-height: 200px; resize: vertical; line-height: 1.6; }
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 12px; opacity: .6; margin-bottom: 4px; }
+
+    .actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn {
+      padding: 10px 16px; background: #5b5bff; color: white;
+      border: 0; border-radius: 8px; cursor: pointer; font-size: 13px;
+    }
+    .btn.secondary { background: rgba(255,255,255,.08); }
+    .btn.danger { background: #b5444a; }
+
+    .chapter-list { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow-y: auto; }
+    .chapter-item {
+      padding: 10px 12px; background: #1c2029; border-radius: 8px;
+      cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .chapter-item .t { flex: 1; }
+    .chapter-item.active { background: rgba(91,91,255,.18); }
+    .chapter-item .x { font-size: 11px; opacity: .5; }
+
+    .tip { padding: 10px; background: rgba(91,91,255,.08); border-radius: 8px; font-size: 12px; opacity: .8; margin-bottom: 12px; }
+    .err { color: #ff7676; font-size: 13px; }
+    .ok  { color: #66e5a6; font-size: 13px; }
+
+    .meta-card { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .meta-card .cell { background: #1c2029; padding: 10px; border-radius: 8px; text-align: center; }
+    .meta-card .cell .n { font-size: 22px; font-weight: 700; }
+    .meta-card .cell .l { font-size: 11px; opacity: .5; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div class="topbar">
+      <a class="btn-back" href="./index.html">‹ 返回</a>
+      <h1>作者工作台</h1>
+      <a class="btn-back" href="./me.html">我的</a>
+    </div>
+
+    <div id="guard" class="panel" style="display:none;">
+      <p>正在检查权限…</p>
+    </div>
+
+    <div id="main" style="display:none;">
+      <div class="meta-card">
+        <div class="cell"><div class="n" id="cnt_books">0</div><div class="l">作品</div></div>
+        <div class="cell"><div class="n" id="cnt_chs">0</div><div class="l">章节</div></div>
+        <div class="cell"><div class="n" id="cnt_words">0</div><div class="l">总字数</div></div>
+      </div>
+
+      <div class="tip">
+        封面改成"输入图片 URL"或勾选内置封面(本地调试)。
+        如需"上传图片到云",推荐用 supabase storage / imgur 等。
+      </div>
+
+      <div class="row">
+        <div class="panel">
+          <h2>我的作品</h2>
+          <div class="book-list" id="bookList"></div>
+          <button class="new-btn" id="newBook">＋ 新建作品</button>
+        </div>
+
+        <div class="panel">
+          <div id="editor" style="display:none;">
+            <h2 id="editorTitle">编辑作品</h2>
+            <div class="field"><label>书名</label><input class="input" id="f_title"></div>
+            <div class="field"><label>作者笔名</label><input class="input" id="f_author"></div>
+            <div class="field"><label>分类(玄幻/都市/历史/言情/科幻/悬疑/散文)</label>
+              <input class="input" id="f_genre">
+            </div>
+            <div class="field"><label>简介</label><textarea id="f_intro" style="min-height: 70px;"></textarea></div>
+            <div class="field"><label>封面 URL</label><input class="input" id="f_cover" placeholder="https://..."></div>
+            <div class="actions">
+              <button class="btn" id="saveBook">保存</button>
+              <button class="btn secondary" id="cancelBook">取消</button>
+            </div>
+            <div id="bookMsg" style="margin-top:8px;"></div>
+          </div>
+
+          <div id="chaptersView" style="display:none;">
+            <h2 id="chaptersTitle">章节</h2>
+            <div class="field" id="ch_ap"></div>
+            <div class="chapter-list" id="chapterList"></div>
+            <div style="margin-top:12px;">
+              <h2 style="margin-bottom:6px;">添加章节</h2>
+              <div class="field"><input class="input" id="new_ch_title" placeholder="章节标题"></div>
+              <div class="field"><textarea id="new_ch_body" placeholder="正文"></textarea></div>
+              <div class="actions">
+                <button class="btn" id="addChapter">发布章节</button>
+              </div>
+              <div id="chMsg" style="margin-top:8px;"></div>
+            </div>
+          </div>
+
+          <div id="welcome" style="padding: 40px 10px; text-align: center; opacity: .6;">
+            ← 选择左侧的作品开始编辑
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { authMe, listBooks, createBook, setBookCover, listChapters, createChapter, getChapter, updateChapter } from './api-client.js';
+
+    const $ = (s) => document.querySelector(s);
+    const msg = (s, ok) => { const el = $(s); el.textContent = ''; setTimeout(() => el.textContent = ok || '', 0); };
+    let me = null, allBooks = [], book = null, chapter = null, chapters = [];
+
+    async function init() {
+      try { me = (await authMe()).user; } catch { location.href = './auth.html'; return; }
+      if (!me.isAuthor) {
+        $('#guard').style.display = 'block';
+        $('#guard').innerHTML = `<div class="err">你不是作者。<br>请先回 <a href="./me.html" style="color:#7aa8ff">我的</a> 申请成为作者。</div>`;
+        return;
+      }
+      $('#main').style.display = 'block';
+      await refreshBooks();
+    }
+
+    async function refreshBooks() {
+      try {
+        const r = await listBooks();
+        allBooks = r.books.filter((b) => b.author_phone === me.phone);
+      } catch (e) {
+        $('#bookList').innerHTML = `<div class="err">${e.message}</div>`;
+        return;
+      }
+      $('#cnt_books').textContent = allBooks.length;
+      const allChs = allBooks.length ? (await Promise.all(allBooks.map((b) => listChapters(b.id).catch(() => ({ chapters: [] }))))).reduce((a, r) => a.concat(r.chapters), []) : [];
+      $('#cnt_chs').textContent = allChs.length;
+      renderBookList();
+    }
+
+    function renderBookList() {
+      const el = $('#bookList');
+      if (allBooks.length === 0) {
+        el.innerHTML = `<div class="empty">还没有作品</div>`;
+        return;
+      }
+      el.innerHTML = allBooks.map((b) => `
+        <div class="book-item ${book && book.id === b.id ? 'active' : ''}" data-id="${b.id}">
+          <div class="t">${escapeHtml(b.title)}</div>
+          <div class="m">${escapeHtml(b.author)} · ${escapeHtml(b.genre || '')} · 🔥${b.hot || 0} · ★${b.rating_n ? (b.rating_avg || 0).toFixed(1) + ' (' + b.rating_n + ')' : '未评分'}</div>
+        </div>
+      `).join('');
+      $$('.book-item').forEach((el) => el.addEventListener('click', () => selectBook(el.dataset.id)));
+    }
+
+    function escapeHtml(s) { return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+    function $$ (s) { return Array.from(document.querySelectorAll(s)); }
+
+    function selectBook(id) {
+      book = allBooks.find((b) => b.id === id);
+      $('#welcome').style.display = 'none';
+      $('#chaptersView').style.display = 'block';
+      $('#editor').style.display = 'none';
+      $('#editorTitle').textContent = book.title;
+      $('#chaptersTitle').textContent = `《${book.title}》的章节`;
+      renderBookList();
+      loadChapters();
+    }
+
+    async function loadChapters() {
+      try {
+        const r = await listChapters(book.id);
+        // 因为我们实现 listChapters 对未审核也全返回;但当前后端会过滤 approved。这里看到的是已发布。
+        chapters = r.chapters;
+      } catch (e) { chapters = []; }
+      renderChapters();
+    }
+
+    function renderChapters() {
+      const el = $('#chapterList');
+      if (chapters.length === 0) {
+        el.innerHTML = `<div class="empty">还没有章节,在下面发布第一章</div>`;
+        return;
+      }
+      el.innerHTML = chapters.map((c) => `
+        <div class="chapter-item" data-id="${c.id}">
+          <div class="t">${escapeHtml(c.title)}</div>
+          <div class="x">#${c.order_index || '-'}</div>
+        </div>
+      `).join('');
+      $$('.chapter-item').forEach((el) => el.addEventListener('click', () => openChapter(el.dataset.id)));
+    }
+
+    async function openChapter(id) {
+      try {
+        const r = await getChapter(id);
+        const c = r.chapter;
+        const newTitle = prompt('章节标题', c.title);
+        if (newTitle === null) return;
+        const newBody = prompt('正文(只支持编辑全部替换):\n\n' + c.body.slice(0, 200), c.body);
+        if (newBody === null) return;
+        await updateChapter(id, { title: newTitle, body: newBody });
+        alert('已保存');
+        loadChapters();
+      } catch (e) { alert('编辑失败: ' + e.message); }
+    }
+
+    $('#newBook').addEventListener('click', () => {
+      book = null;
+      $('#welcome').style.display = 'none';
+      $('#chaptersView').style.display = 'none';
+      $('#editor').style.display = 'block';
+      $('#editorTitle').textContent = '新建作品';
+      $('#f_title').value = '';
+      $('#f_author').value = me.name || '';
+      $('#f_genre').value = '玄幻';
+      $('#f_intro').value = '';
+      $('#f_cover').value = '';
+      msg('#bookMsg', '');
+    });
+
+    $('#cancelBook').addEventListener('click', () => {
+      $('#editor').style.display = 'none';
+      $('#welcome').style.display = 'block';
+    });
+
+    $('#saveBook').addEventListener('click', async () => {
+      msg('#bookMsg', '');
+      const payload = {
+        title: $('#f_title').value.trim(),
+        author: $('#f_author').value.trim(),
+        genre: $('#f_genre').value.trim(),
+        intro: $('#f_intro').value.trim(),
+      };
+      if (!payload.title || !payload.author) return msg('#bookMsg', '需要书名和作者笔名');
+      try {
+        const r = await createBook(payload);
+        const cover = $('#f_cover').value.trim();
+        if (cover) {
+          try { await setBookCover(r.book.id, cover); } catch {}
+        }
+        $('#editor').style.display = 'none';
+        $('#welcome').style.display = 'block';
+        msg('#bookMsg', '已创建');
+        await refreshBooks();
+      } catch (e) { msg('#bookMsg', e.message); }
+    });
+
+    $('#addChapter').addEventListener('click', async () => {
+      msg('#chMsg', '');
+      const title = $('#new_ch_title').value.trim();
+      const body  = $('#new_ch_body').value.trim();
+      if (!title || !body) return msg('#chMsg', '需要标题和正文');
+      try {
+        await createChapter(book.id, title, body);
+        $('#new_ch_title').value = '';
+        $('#new_ch_body').value = '';
+        msg('#chMsg', '已发布');
+        await loadChapters();
+      } catch (e) { msg('#chMsg', e.message); }
+    });
+
+    init();
+  </script>
+</body>
+</html>

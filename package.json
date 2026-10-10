@@ -1,0 +1,22 @@
+{
+  "name": "novel-web-project",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "听书 · 小说阅读站(Vercel + Supabase,账号密码登录)",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "vercel dev",
+    "seed": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^13.0.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  }
+}

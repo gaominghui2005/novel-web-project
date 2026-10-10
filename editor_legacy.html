@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375">
+  <title>编辑后台 · 听书</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .ed-page { padding: 14px 18px 60px; }
+    .ed-tabs {
+      display: flex; gap: 6px; margin-bottom: 14px;
+      overflow-x: auto;
+    }
+    .ed-tabs button {
+      flex: 0 0 auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      padding: 8px 14px;
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .ed-tabs button.active {
+      background: linear-gradient(135deg, var(--green), var(--accent));
+      color: white;
+      border: none;
+    }
+    .ed-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .ed-card .head {
+      display: flex; gap: 10px; align-items: center;
+      margin-bottom: 10px;
+    }
+    .ed-card .head img { width: 40px; height: 56px; border-radius: 4px; object-fit: cover; background: var(--gray-1); }
+    .ed-card .head .info { flex: 1; }
+    .ed-card .head .name { font-size: 14px; font-weight: 600; }
+    .ed-card .head .meta { font-size: 11px; color: var(--text-3); }
+    .ed-card .desc { font-size: 12px; color: var(--text-2); line-height: 1.6; margin-bottom: 10px; }
+    .ed-card .ops { display: flex; gap: 6px; }
+    .ed-card .ops button {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .ed-card .ops button.primary { background: linear-gradient(135deg, var(--green), var(--accent)); color: white; border: none; }
+    .ed-card .ops button.danger { color: var(--danger); border-color: var(--danger); }
+    .ed-banner-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .ed-stat {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+      margin-bottom: 14px;
+    }
+    .ed-stat .item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .ed-stat .num { font-size: 22px; font-weight: 700; color: var(--green); }
+    .ed-stat .label { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+    .ed-foot {
+      position: fixed; left: 14px; right: 14px; bottom: 14px;
+      display: flex; gap: 8px; z-index: 20;
+    }
+    .ed-foot button {
+      flex: 1; padding: 12px; border-radius: 10px;
+      font-size: 14px; cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text);
+    }
+    .ed-foot button.primary {
+      background: linear-gradient(135deg, var(--green), var(--accent));
+      border: none; color: white; font-weight: 600;
+    }
+    .fb-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .fb-item:last-child { border-bottom: none; }
+    .fb-item .who { font-size: 12px; color: var(--green); margin-bottom: 4px; }
+    .fb-item .text { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+    .fb-item .at { font-size: 11px; color: var(--text-3); }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <div class="phone-screen" id="screen">
+      <div class="app-body" id="app-body"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="data.js"></script>
+  <script>
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const APP_BODY = () => $('#app-body');
+
+    function toast(msg, ms = 1500) {
+      const t = $('#toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._tid);
+      t._tid = setTimeout(() => t.classList.remove('show'), ms);
+    }
+
+    let _edTab = 'overview';
+
+    if (CURRENT_USER.role !== 'editor') {
+      render(loginGate(), { hideTab: true });
+    } else {
+      render(dashboard(), { hideTab: true });
+    }
+
+    function loginGate() {
+      return `
+        <div class="login-page">
+          <div class="logo">🛠</div>
+          <h1>编辑后台</h1>
+          <p class="sub">仅编辑可访问</p>
+          <div class="login-form">
+            <input type="text" id="ed_user" value="editor">
+            <input type="password" id="ed_pass" value="123456">
+          </div>
+          <button class="login-btn" onclick="doEdLogin()">登录</button>
+          <div style="margin-top:14px;font-size:12px;">
+            <a href="index.html" style="color:var(--text-3);">← 返回听书</a>
+          </div>
+        </div>
+      `;
+    }
+    window.doEdLogin = function () {
+      const u = $('#ed_user').value.trim();
+      const p = $('#ed_pass').value;
+      const acc = ACCOUNTS.find(a => a.username === u && a.password === p && a.role === 'editor');
+      if (!acc) { toast('账号错误'); return; }
+      CURRENT_USER.role = 'editor';
+      CURRENT_USER.name = acc.name;
+      saveUser();
+      render(dashboard(), { hideTab: true });
+    };
+
+    function tabs() {
+      return `
+        <div class="ed-tabs">
+          <button class="${_edTab==='overview'?'active':''}" onclick="switchEd('overview')">概览</button>
+          <button class="${_edTab==='books'?'active':''}" onclick="switchEd('books')">书库</button>
+          <button class="${_edTab==='banner'?'active':''}" onclick="switchEd('banner')">Banner</button>
+          <button class="${_edTab==='feedback'?'active':''}" onclick="switchEd('feedback')">反馈</button>
+        </div>
+      `;
+    }
+    window.switchEd = function (t) {
+      _edTab = t;
+      render(dashboard(), { hideTab: true });
+    };
+
+    function dashboard() {
+      return `
+        <div class="ed-page">
+          <div class="nav-bar">
+            <span class="back" onclick="location.href='index.html'">‹</span>
+            <span class="title">编辑后台</span>
+            <span class="right" onclick="location.href='index.html'">✕</span>
+          </div>
+          ${tabs()}
+          ${_edTab === 'overview' ? viewOverview() : ''}
+          ${_edTab === 'books'    ? viewBooks()    : ''}
+          ${_edTab === 'banner'   ? viewBanner()   : ''}
+          ${_edTab === 'feedback' ? viewFeedback() : ''}
+          <div class="ed-foot">
+            <button onclick="location.href='index.html'">返回听书</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function viewOverview() {
+      const books = getAllBooks();
+      const total = books.length;
+      const extra = loadExtraBooks().length;
+      const chapters = Object.keys(getAllChapters()).reduce((s, k) => s + getAllChapters()[k].length, 0);
+      const banners = loadBanners().filter(b => b.active).length;
+      const fbs = FEEDBACKS.length;
+      return `
+        <div class="ed-stat">
+          <div class="item"><div class="num">${total}</div><div class="label">书籍总数（本地新增 ${extra}）</div></div>
+          <div class="item"><div class="num">${chapters}</div><div class="label">章节总数</div></div>
+          <div class="item"><div class="num">${banners}</div><div class="label">活跃 Banner</div></div>
+          <div class="item"><div class="num">${fbs}</div><div class="label">用户反馈</div></div>
+        </div>
+        <div class="ed-card">
+          <div class="desc">点击上方 Tab 管理内容。所有改动保存在 localStorage 中。</div>
+        </div>
+      `;
+    }
+
+    function viewBooks() {
+      const books = getAllBooks();
+      return `
+        <div class="ed-card" style="background:transparent;border:none;padding:0;">
+          <div style="font-size:13px;color:var(--text-3);margin-bottom:10px;">
+            共 ${books.length} 本 · 长按"下架"会从书库移除
+          </div>
+        </div>
+        ${books.map(b => {
+          const a = findAuthor(b.authorId);
+          const g = findGenre(b.genreId);
+          return `
+            <div class="ed-card">
+              <div class="head">
+                <img src="${b.cover}" alt="">
+                <div class="info">
+                  <div class="name">${b.title}</div>
+                  <div class="meta">${a ? a.name : ''} · ${g ? g.name : ''} · ${b.status} · ${b.hot.toLocaleString()} 热度</div>
+                </div>
+              </div>
+              <div class="desc">${b.intro.slice(0, 60)}...</div>
+              <div class="ops">
+                <button class="primary" onclick="previewBook('${b.id}')">预览</button>
+                <button class="danger" onclick="removeBook('${b.id}')">下架</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      `;
+    }
+    window.removeBook = function (bid) {
+      if (!confirm('确认下架这本书？')) return;
+      const extra = loadExtraBooks();
+      const idx = extra.findIndex(x => x.id === bid);
+      if (idx >= 0) {
+        saveExtraBooks(extra.filter(b => b.id !== bid));
+      } else {
+        const ov = loadOverrides();
+        ov.removedBooks = ov.removedBooks || [];
+        if (!ov.removedBooks.includes(bid)) ov.removedBooks.push(bid);
+        saveOverrides(ov);
+      }
+      toast('已下架');
+      render(dashboard(), { hideTab: true });
+    };
+    window.previewBook = function (bid) {
+      sessionStorage.setItem('preview_book', bid);
+      location.href = 'index.html';
+    };
+
+    function viewBanner() {
+      const list = loadBanners();
+      return `
+        <div class="ed-card">
+          <div style="font-size:13px;color:var(--text-2);margin-bottom:10px;">添加公告</div>
+          <input id="bn_text" class="ed-banner-input" placeholder="公告内容...">
+          <div class="ops">
+            <button class="primary" onclick="addBanner()">发布</button>
+          </div>
+        </div>
+        <div class="ed-card">
+          <div style="font-size:13px;color:var(--text-2);margin-bottom:10px;">已发布 (${list.length})</div>
+          ${list.length === 0 ? '<div style="font-size:12px;color:var(--text-3);text-align:center;padding:14px;">暂无公告</div>' : ''}
+          ${list.map(b => `
+            <div class="fb-item">
+              <div class="who">📢 ${b.active ? '显示中' : '已隐藏'}</div>
+              <div class="text">${b.text}</div>
+              <div class="ops" style="margin-top:8px;">
+                <button onclick="toggleBanner('${b.id}')">${b.active ? '隐藏' : '显示'}</button>
+                <button class="danger" onclick="delBanner('${b.id}')">删除</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    window.addBanner = function () {
+      const t = $('#bn_text').value.trim();
+      if (!t) { toast('请输入内容'); return; }
+      const list = loadBanners();
+      list.push({ id: 'bn_' + Date.now(), text: t, active: true });
+      saveBanners(list);
+      $('#bn_text').value = '';
+      toast('已发布');
+      render(dashboard(), { hideTab: true });
+    };
+    window.toggleBanner = function (id) {
+      const list = loadBanners();
+      const b = list.find(x => x.id === id);
+      if (b) b.active = !b.active;
+      saveBanners(list);
+      render(dashboard(), { hideTab: true });
+    };
+    window.delBanner = function (id) {
+      if (!confirm('确认删除？')) return;
+      saveBanners(loadBanners().filter(x => x.id !== id));
+      toast('已删除');
+      render(dashboard(), { hideTab: true });
+    };
+
+    function viewFeedback() {
+      return `
+        <div class="ed-card">
+          <div style="font-size:13px;color:var(--text-2);margin-bottom:10px;">用户反馈 (${FEEDBACKS.length})</div>
+          ${FEEDBACKS.length === 0 ? '<div style="font-size:12px;color:var(--text-3);text-align:center;padding:14px;">暂无反馈</div>' : ''}
+          ${FEEDBACKS.map(f => `
+            <div class="fb-item">
+              <div class="who">${f.user}</div>
+              <div class="text">${f.text}</div>
+              <div class="at">${f.at}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function render(html) {
+      APP_BODY().innerHTML = html;
+      APP_BODY().scrollTop = 0;
+      const tb = $('#tab-bar');
+      if (tb) tb.style.display = 'none';
+      APP_BODY().style.paddingBottom = '0';
+    }
+  </script>
+</body>
+</html>
