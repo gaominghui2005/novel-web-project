@@ -217,6 +217,24 @@ async function getPhone(req, env) {
 // 路由分发
 // =====================================================
 export async function onRequest(context) {
+  try {
+    return await _route(context);
+  } catch (e) {
+    const msg = (e && (e.stack || e.message)) || String(e);
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'unhandled: ' + msg,
+      hasUrl: !!context.env.SUPABASE_URL,
+      hasKey: !!(context.env.SUPABASE_SERVICE_ROLE_KEY || context.env.SUPABASE_SECRET_KEY),
+      hasSecret: !!context.env.JWT_SECRET,
+    }, null, 2), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    });
+  }
+}
+
+async function _route(context) {
   const url = new URL(context.request.url);
   const path = url.pathname;
   const method = context.request.method;
