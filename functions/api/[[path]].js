@@ -1,4 +1,4 @@
-// Cloudflare Pages 自包含 API router
+// Cloudflare Pages 自包含 API router (v3 - better error)
 // 路径: /functions/api/[[path]].js
 // 直接实现 14 个 API,不依赖外部 api/ 目录。
 // 走 Supabase REST API(PostgREST),bearer service_role key 鉴权。
@@ -229,6 +229,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({
       ok: false,
       error: 'unhandled: ' + msg,
+      buildTag: 'v3-530-debug',
       hasUrl: !!context.env.SUPABASE_URL,
       hasKey: !!(context.env.SUPABASE_SERVICE_ROLE_KEY || context.env.SUPABASE_SECRET_KEY),
       hasSecret: !!context.env.JWT_SECRET,
