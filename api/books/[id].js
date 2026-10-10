@@ -1,5 +1,5 @@
-import { getDB } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/db.js';
-import { ok, bad, allowMethods } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/http.js';
+import { getDB } from '../../lib/db.js';
+import { ok, bad, allowMethods } from '../../lib/http.js';
 
 // GET /api/books/[id]    公开
 export default async function handler(req, res) {

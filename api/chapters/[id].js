@@ -1,8 +1,8 @@
 // GET /api/chapters/[id]    公开正文(已审核)
 // PUT /api/chapters/[id]    作者本人
-import { getDB } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/db.js';
-import { getPhone } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/auth.js';
-import { ok, bad, allowMethods, readJson } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/http.js';
+import { getDB } from '../../lib/db.js';
+import { getPhone } from '../../lib/auth.js';
+import { ok, bad, allowMethods, readJson } from '../../lib/http.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') return getOne(req, res);

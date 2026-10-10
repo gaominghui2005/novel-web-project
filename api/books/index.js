@@ -1,8 +1,8 @@
 // GET /api/books  公开,任何人可读
 // POST /api/books 需要 is_author
-import { getDB } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/db.js';
-import { ok, bad, allowMethods, readJson } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/http.js';
-import { getPhone } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/auth.js';
+import { getDB } from '../../lib/db.js';
+import { ok, bad, allowMethods, readJson } from '../../lib/http.js';
+import { getPhone } from '../../lib/auth.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') return list(req, res);

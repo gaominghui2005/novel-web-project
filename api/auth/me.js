@@ -1,6 +1,6 @@
-import { getDB } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/db.js';
-import { requireAuth } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/auth.js';
-import { ok, bad, allowMethods } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/http.js';
+import { getDB } from '../../lib/db.js';
+import { requireAuth } from '../../lib/auth.js';
+import { ok, bad, allowMethods } from '../../lib/http.js';
 
 export default async function handler(req, res) {
   if (!allowMethods(req, res, ['GET', 'DELETE'])) return;

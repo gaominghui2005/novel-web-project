@@ -1,7 +1,7 @@
 // 公告(任何人可读 active 的,编辑可写)
-import { getDB } from 'file:///C:/Users/PC/Desktop/%E5%B0%8F%E8%AF%B4%E7%BD%91%E9%A1%B5%E9%A1%B9%E7%9B%AE/lib/db.js';
-import { getPhone } from 'file:///C:/Users/PC/Desktop/%E5%B0%8F%E8%AF%B4%E7%BD%91%E9%A1%B5%E9%A1%B9%E7%9B%AE/lib/auth.js';
-import { ok, bad, allowMethods, readJson } from 'file:///C:/Users/PC/Desktop/%E5%B0%8F%E8%AF%B4%E7%BD%91%E9%A1%B5%E9%A1%B9%E7%9B%AE/lib/http.js';
+import { getDB } from '../lib/db.js';
+import { getPhone } from '../lib/auth.js';
+import { ok, bad, allowMethods, readJson } from '../lib/http.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') return list(res);

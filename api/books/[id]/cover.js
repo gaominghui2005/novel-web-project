@@ -1,8 +1,8 @@
 // POST /api/books/[id]/cover  设置封面 URL(用户上传图片后拿到 URL,再调这里)
 // 无 AI 了
-import { getDB } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/db.js';
-import { getPhone } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/auth.js';
-import { ok, bad, allowMethods, readJson } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/http.js';
+import { getDB } from '../../../lib/db.js';
+import { getPhone } from '../../../lib/auth.js';
+import { ok, bad, allowMethods, readJson } from '../../../lib/http.js';
 
 export default async function handler(req, res) {
   if (!allowMethods(req, res, ['POST'])) return;

@@ -2,9 +2,9 @@
 // GET  /api/ratings?type=top&limit=10  返回贝叶斯平均排行的书列�?// POST /api/ratings  { book_id, score }  需要登�?同一用户同一本书一�?//   - score 只能�?1..5,贝叶斯平�?= (score + m*R) / (n+m)
 //   - m=5,R=3.0(类似�?IMDb 的默认�?
 
-import { getDB } from 'file:///C:/Users/PC/Desktop/%E5%B0%8F%E8%AF%B4%E7%BD%91%E9%A1%B5%E9%A1%B9%E7%9B%AE/lib/db.js';
-import { requireAuth } from 'file:///C:/Users/PC/Desktop/%E5%B0%8F%E8%AF%B4%E7%BD%91%E9%A1%B5%E9%A1%B9%E7%9B%AE/lib/auth.js';
-import { ok, bad, allowMethods, readJson } from 'file:///C:/Users/PC/Desktop/%E5%B0%8F%E8%AF%B4%E7%BD%91%E9%A1%B5%E9%A1%B9%E7%9B%AE/lib/http.js';
+import { getDB } from '../%E5%B0%8F%E8%AF%B4%E7%BD%91%E9%A1%B5%E9%A1%B9%E7%9B%AE/lib/db.js';
+import { requireAuth } from '../%E5%B0%8F%E8%AF%B4%E7%BD%91%E9%A1%B5%E9%A1%B9%E7%9B%AE/lib/auth.js';
+import { ok, bad, allowMethods, readJson } from '../%E5%B0%8F%E8%AF%B4%E7%BD%91%E9%A1%B5%E9%A1%B9%E7%9B%AE/lib/http.js';
 
 const M = 5;       // 先验强度
 const R = 3.0;     // 先验平均�?

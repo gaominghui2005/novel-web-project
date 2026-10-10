@@ -1,7 +1,7 @@
-import { getDB } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/db.js';
-import { hashPassword, verifyPassword, isValidPhone, isValidPassword } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/password.js';
-import { signToken, setTokenCookie } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/auth.js';
-import { ok, bad, allowMethods, readJson } from 'file:///C:/Users/PC/Desktop/小说网页项目/lib/http.js';
+import { getDB } from '../../lib/db.js';
+import { hashPassword, verifyPassword, isValidPhone, isValidPassword } from '../../lib/password.js';
+import { signToken, setTokenCookie } from '../../lib/auth.js';
+import { ok, bad, allowMethods, readJson } from '../../lib/http.js';
 
 export default async function handler(req, res) {
   if (!allowMethods(req, res, ['POST'])) return;
