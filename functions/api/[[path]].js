@@ -117,14 +117,19 @@ class Pg {
     };
     const init = { method, headers };
     if (body) init.body = JSON.stringify(body);
-    const res = await fetch(url, init);
-    const text = await res.text();
+    let res, text;
+    try {
+      res = await fetch(url, init);
+      text = await res.text();
+    } catch (e) {
+      return { data: null, error: { message: 'fetch failed: ' + (e && e.message), code: 'FETCH_ERR', url } };
+    }
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = text; }
     if (!res.ok) {
       const msg = (data && data.message) ? data.message : (data && data.error) ? data.error : 'HTTP ' + res.status;
       const code = (data && data.code) ? data.code : null;
-      return { data: null, error: { message: msg, code } };
+      return { data: null, error: { message: msg, code, status: res.status } };
     }
     return { data, error: null };
   }
